@@ -8,8 +8,16 @@ import { useStore } from "@/lib/store";
 import { generateListening, type AiListening } from "@/lib/ai.functions";
 import { ACCENTS, CEFR_LEVELS, REAL_LIFE_TOPICS, type CefrLevel } from "@/lib/types";
 
-export const Route = createFileRoute("/student/listening")({
+const ACCENT_LANG: Record<string, string> = {
+  "South African English": "en-ZA",
+  "British English": "en-GB",
+  "American English": "en-US",
+  "Australian English": "en-AU",
+  "Irish English": "en-IE",
+  "Indian English": "en-IN",
+};
 
+export const Route = createFileRoute("/student/listening")({
   head: () => ({
     meta: [
       { title: "Listening practice — LinguaLoop" },
