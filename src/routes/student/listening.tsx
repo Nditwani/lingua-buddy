@@ -9,6 +9,7 @@ import { generateListening, type AiListening } from "@/lib/ai.functions";
 import { ACCENTS, CEFR_LEVELS, REAL_LIFE_TOPICS, type CefrLevel } from "@/lib/types";
 
 export const Route = createFileRoute("/student/listening")({
+
   head: () => ({
     meta: [
       { title: "Listening practice — LinguaLoop" },
