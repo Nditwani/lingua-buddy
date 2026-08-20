@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Headphones, Play, RotateCcw, Square } from "lucide-react";
+import { Headphones, Pause, Play, RotateCcw, Square } from "lucide-react";
 import { Shell, PageTitle, AiBadge, ReviewNotice } from "@/components/app/shell";
 import { useStore } from "@/lib/store";
 import { generateListening, type AiListening } from "@/lib/ai.functions";
@@ -31,14 +31,29 @@ function Listening() {
   const [showTranscript, setShowTranscript] = useState(false);
   const [revealed, setRevealed] = useState<number[]>([]);
   const [speaking, setSpeaking] = useState(false);
-  const supportsSpeech = useRef(false);
+  const [paused, setPaused] = useState(false);
+  const [rate, setRate] = useState(1);
+  const [supported, setSupported] = useState(true);
+  const voicesRef = useRef<SpeechSynthesisVoice[]>([]);
 
   useEffect(() => {
-    supportsSpeech.current = typeof window !== "undefined" && "speechSynthesis" in window;
+    const ok = typeof window !== "undefined" && "speechSynthesis" in window;
+    setSupported(ok);
+    if (!ok) return;
+    const load = () => {
+      voicesRef.current = window.speechSynthesis.getVoices();
+    };
+    load();
+    window.speechSynthesis.addEventListener("voiceschanged", load);
     return () => {
-      if (typeof window !== "undefined" && "speechSynthesis" in window) window.speechSynthesis.cancel();
+      window.speechSynthesis.removeEventListener("voiceschanged", load);
+      window.speechSynthesis.cancel();
     };
   }, []);
+
+  useEffect(() => {
+    setRate(level === "A1" || level === "A2" ? 0.8 : 1);
+  }, [level]);
 
   async function generate() {
     setBusy(true);
@@ -56,23 +71,50 @@ function Listening() {
 
   function play(restart = false) {
     if (!activity) return;
-    if (!("speechSynthesis" in window)) {
+    if (!supported) {
       toast.error("Your browser can't play audio here — read the transcript instead.");
       setShowTranscript(true);
+      return;
+    }
+    if (!restart && window.speechSynthesis.paused) {
+      window.speechSynthesis.resume();
+      setPaused(false);
+      setSpeaking(true);
       return;
     }
     window.speechSynthesis.cancel();
     if (restart) setRevealed([]);
     const utterance = new SpeechSynthesisUtterance(activity.transcript.replace(/^[AB]:\s*/gm, ""));
-    utterance.rate = level === "A1" || level === "A2" ? 0.85 : 0.95;
-    utterance.onend = () => setSpeaking(false);
+    const lang = ACCENT_LANG[accent] ?? "en-GB";
+    utterance.lang = lang;
+    const voice =
+      voicesRef.current.find((v) => v.lang.replace("_", "-") === lang) ??
+      voicesRef.current.find((v) => v.lang.toLowerCase().startsWith("en"));
+    if (voice) utterance.voice = voice;
+    utterance.rate = rate;
+    utterance.onend = () => {
+      setSpeaking(false);
+      setPaused(false);
+    };
+    utterance.onerror = () => {
+      setSpeaking(false);
+      setPaused(false);
+    };
+    setPaused(false);
     setSpeaking(true);
     window.speechSynthesis.speak(utterance);
   }
 
+  function pause() {
+    if (!supported) return;
+    window.speechSynthesis.pause();
+    setPaused(true);
+  }
+
   function stop() {
-    if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+    if (supported) window.speechSynthesis.cancel();
     setSpeaking(false);
+    setPaused(false);
   }
 
   return (
@@ -137,9 +179,18 @@ function Listening() {
               <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => play()}
+                  disabled={speaking && !paused}
                   className="inline-flex items-center gap-2 rounded-full bg-accent px-4 py-2 text-sm font-medium text-accent-foreground"
                 >
-                  <Play className="size-4" /> {speaking ? "Playing…" : "Play"}
+                  <Play className="size-4" />{" "}
+                  {speaking && !paused ? "Playing…" : paused ? "Resume" : "Play"}
+                </button>
+                <button
+                  onClick={pause}
+                  disabled={!speaking || paused}
+                  className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm disabled:opacity-50"
+                >
+                  <Pause className="size-4" /> Pause
                 </button>
                 <button onClick={() => play(true)} className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm">
                   <RotateCcw className="size-4" /> Replay
@@ -154,6 +205,25 @@ function Listening() {
                   {showTranscript ? "Hide" : "Show"} transcript
                 </button>
               </div>
+
+              <label className="flex max-w-xs items-center gap-3 text-sm">
+                <span className="whitespace-nowrap">Speed {rate.toFixed(2)}×</span>
+                <input
+                  type="range"
+                  min={0.6}
+                  max={1.3}
+                  step={0.05}
+                  value={rate}
+                  onChange={(e) => setRate(Number(e.target.value))}
+                  className="w-full"
+                />
+              </label>
+
+              {!supported ? (
+                <p className="text-sm text-muted-foreground">
+                  Audio playback isn't supported in this browser — use the transcript below.
+                </p>
+              ) : null}
 
               {showTranscript ? (
                 <pre className="whitespace-pre-wrap rounded-xl bg-muted p-4 font-sans text-sm leading-relaxed">
