@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Download, Share2 } from "lucide-react";
 import { Shell, PageTitle, AiBadge, ReviewNotice } from "@/components/app/shell";
 import { studentContext, uid, useStore } from "@/lib/store";
 import { summariseLesson, type AiLessonSummary } from "@/lib/ai.functions";
@@ -38,6 +39,97 @@ function Summariser() {
   const [draft, setDraft] = useState<AiLessonSummary | null>(null);
 
   const patch = (p: Partial<AiLessonSummary>) => setDraft((d) => (d ? { ...d, ...p } : d));
+
+  function summaryText(s: AiLessonSummary) {
+    const lines = [
+      `Lesson summary — ${activeStudent?.name ?? "Student"}`,
+      new Date().toLocaleDateString(),
+      "",
+      `Topic: ${s.topic}`,
+      "",
+      "What we talked about:",
+      s.discussion,
+      "",
+      "Mistakes & corrections:",
+      ...s.mistakes.map((m) => `• "${m.said}" → "${m.corrected}" (${m.explanation})`),
+      "",
+      "New vocabulary:",
+      ...s.vocabulary.map((v) => `• ${v.term} — ${v.meaning} (e.g. ${v.example})`),
+      "",
+      "Homework:",
+      ...s.homework.map((h) => `• ${h}`),
+      "",
+      "Next lesson focus:",
+      ...s.nextFocus.map((n) => `• ${n}`),
+    ];
+    return lines.join("\n");
+  }
+
+  function downloadPdf() {
+    if (!draft) return;
+    const esc = (t: string) =>
+      t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const list = (items: string[]) =>
+      items.length ? `<ul>${items.map((i) => `<li>${esc(i)}</li>`).join("")}</ul>` : "<p>—</p>";
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>Lesson summary — ${esc(
+      draft.topic,
+    )}</title><style>
+      body{font-family:ui-sans-serif,system-ui,Segoe UI,Helvetica,Arial;margin:40px;color:#1c1c1e;line-height:1.5}
+      h1{font-size:22px;margin:0 0 4px} h2{font-size:15px;margin:24px 0 6px;text-transform:uppercase;letter-spacing:.06em}
+      .meta{color:#666;font-size:13px} ul{margin:0;padding-left:18px} li{margin-bottom:4px} p{margin:0 0 8px}
+    </style></head><body>
+      <h1>${esc(draft.topic)}</h1>
+      <p class="meta">${esc(activeStudent?.name ?? "Student")} · ${new Date().toLocaleDateString()} · LinguaLoop</p>
+      <h2>What we talked about</h2><p>${esc(draft.discussion)}</p>
+      <h2>Mistakes &amp; corrections</h2>${list(
+        draft.mistakes.map((m) => `"${m.said}" → "${m.corrected}" — ${m.explanation}`),
+      )}
+      <h2>New vocabulary</h2>${list(
+        draft.vocabulary.map((v) => `${v.term} — ${v.meaning} (e.g. ${v.example})`),
+      )}
+      <h2>Homework</h2>${list(draft.homework)}
+      <h2>Next lesson focus</h2>${list(draft.nextFocus)}
+    </body></html>`;
+
+    const frame = document.createElement("iframe");
+    frame.style.position = "fixed";
+    frame.style.right = "0";
+    frame.style.bottom = "0";
+    frame.style.width = "0";
+    frame.style.height = "0";
+    frame.style.border = "0";
+    document.body.appendChild(frame);
+    const doc = frame.contentDocument;
+    if (!doc || !frame.contentWindow) {
+      document.body.removeChild(frame);
+      toast.error("Could not open the print dialog.");
+      return;
+    }
+    doc.open();
+    doc.write(html);
+    doc.close();
+    frame.contentWindow.focus();
+    setTimeout(() => {
+      frame.contentWindow?.print();
+      setTimeout(() => document.body.removeChild(frame), 1000);
+    }, 200);
+    toast.success("Choose “Save as PDF” in the print dialog.");
+  }
+
+  async function shareSummary() {
+    if (!draft) return;
+    const text = summaryText(draft);
+    try {
+      if (typeof navigator !== "undefined" && navigator.share) {
+        await navigator.share({ title: `Lesson summary — ${draft.topic}`, text });
+        return;
+      }
+      await navigator.clipboard.writeText(text);
+      toast.success("Summary copied to your clipboard.");
+    } catch {
+      toast.error("Could not share the summary.");
+    }
+  }
 
   async function generate() {
     if (!activeStudent) {
@@ -215,6 +307,21 @@ function Summariser() {
 
               {listField("Homework", "homework")}
               {listField("Next lesson focus", "nextFocus")}
+
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={downloadPdf}
+                  className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm font-medium"
+                >
+                  <Download className="size-4" /> Download PDF
+                </button>
+                <button
+                  onClick={() => void shareSummary()}
+                  className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm font-medium"
+                >
+                  <Share2 className="size-4" /> Share summary
+                </button>
+              </div>
 
               <button onClick={save} className="w-full rounded-full bg-highlight px-4 py-3 font-medium text-highlight-foreground">
                 Approve &amp; save to student profile
