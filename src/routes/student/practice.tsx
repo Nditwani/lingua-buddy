@@ -62,7 +62,7 @@ function Practice() {
 
   const vocabulary = useMemo(() => {
     if (!order) return baseVocabulary;
-    return order.map((i) => baseVocabulary[i]).filter(Boolean);
+    return order.map((i) => baseVocabulary[i]).filter((v): v is VocabItem => Boolean(v));
   }, [baseVocabulary, order]);
 
   const homeworkTasks = useMemo(
@@ -110,7 +110,9 @@ function Practice() {
     const idx = baseVocabulary.map((_, i) => i);
     for (let i = idx.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
-      [idx[i], idx[j]] = [idx[j], idx[i]];
+      const tmp = idx[i]!;
+      idx[i] = idx[j]!;
+      idx[j] = tmp;
     }
     setOrder(idx);
     setCardIndex(0);
