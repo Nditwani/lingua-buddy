@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as StudentIndexRouteImport } from './routes/student/index'
 import { Route as StudentFunFactsRouteImport } from './routes/student/fun-facts'
 import { Route as StudentListeningRouteImport } from './routes/student/listening'
+import { Route as StudentPracticeRouteImport } from './routes/student/practice'
 import { Route as TutorIndexRouteImport } from './routes/tutor/index'
 import { Route as TutorOnboardingRouteImport } from './routes/tutor/onboarding'
 import { Route as TutorResearchRouteImport } from './routes/tutor/research'
@@ -37,6 +38,11 @@ const StudentFunFactsRoute = StudentFunFactsRouteImport.update({
 const StudentListeningRoute = StudentListeningRouteImport.update({
   id: '/student/listening',
   path: '/student/listening',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StudentPracticeRoute = StudentPracticeRouteImport.update({
+  id: '/student/practice',
+  path: '/student/practice',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TutorIndexRoute = TutorIndexRouteImport.update({
@@ -69,6 +75,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/student/fun-facts': typeof StudentFunFactsRoute
   '/student/listening': typeof StudentListeningRoute
+  '/student/practice': typeof StudentPracticeRoute
   '/tutor/onboarding': typeof TutorOnboardingRoute
   '/tutor/research': typeof TutorResearchRoute
   '/tutor/summariser': typeof TutorSummariserRoute
@@ -80,6 +87,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/student/fun-facts': typeof StudentFunFactsRoute
   '/student/listening': typeof StudentListeningRoute
+  '/student/practice': typeof StudentPracticeRoute
   '/tutor/onboarding': typeof TutorOnboardingRoute
   '/tutor/research': typeof TutorResearchRoute
   '/tutor/summariser': typeof TutorSummariserRoute
@@ -92,6 +100,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/student/fun-facts': typeof StudentFunFactsRoute
   '/student/listening': typeof StudentListeningRoute
+  '/student/practice': typeof StudentPracticeRoute
   '/tutor/onboarding': typeof TutorOnboardingRoute
   '/tutor/research': typeof TutorResearchRoute
   '/tutor/summariser': typeof TutorSummariserRoute
@@ -105,6 +114,7 @@ export interface FileRouteTypes {
     | '/'
     | '/student/fun-facts'
     | '/student/listening'
+    | '/student/practice'
     | '/tutor/onboarding'
     | '/tutor/research'
     | '/tutor/summariser'
@@ -116,6 +126,7 @@ export interface FileRouteTypes {
     | '/'
     | '/student/fun-facts'
     | '/student/listening'
+    | '/student/practice'
     | '/tutor/onboarding'
     | '/tutor/research'
     | '/tutor/summariser'
@@ -127,6 +138,7 @@ export interface FileRouteTypes {
     | '/'
     | '/student/fun-facts'
     | '/student/listening'
+    | '/student/practice'
     | '/tutor/onboarding'
     | '/tutor/research'
     | '/tutor/summariser'
@@ -139,6 +151,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   StudentFunFactsRoute: typeof StudentFunFactsRoute
   StudentListeningRoute: typeof StudentListeningRoute
+  StudentPracticeRoute: typeof StudentPracticeRoute
   TutorOnboardingRoute: typeof TutorOnboardingRoute
   TutorResearchRoute: typeof TutorResearchRoute
   TutorSummariserRoute: typeof TutorSummariserRoute
@@ -175,6 +188,13 @@ declare module '@tanstack/react-router' {
       path: '/student/listening'
       fullPath: '/student/listening'
       preLoaderRoute: typeof StudentListeningRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/student/practice': {
+      id: '/student/practice'
+      path: '/student/practice'
+      fullPath: '/student/practice'
+      preLoaderRoute: typeof StudentPracticeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/tutor/': {
@@ -219,6 +239,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   StudentFunFactsRoute: StudentFunFactsRoute,
   StudentListeningRoute: StudentListeningRoute,
+  StudentPracticeRoute: StudentPracticeRoute,
   TutorOnboardingRoute: TutorOnboardingRoute,
   TutorResearchRoute: TutorResearchRoute,
   TutorSummariserRoute: TutorSummariserRoute,
