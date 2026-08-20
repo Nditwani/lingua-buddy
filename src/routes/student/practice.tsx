@@ -1,6 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { BookOpen, CheckCircle2, Circle, Lightbulb, RotateCcw, ArrowLeft, ArrowRight } from "lucide-react";
+import {
+  BookOpen,
+  CheckCircle2,
+  Circle,
+  Lightbulb,
+  RotateCcw,
+  ArrowLeft,
+  ArrowRight,
+} from "lucide-react";
 import { Shell, PageTitle, AiBadge, ReviewNotice } from "@/components/app/shell";
 import { useStore } from "@/lib/store";
 import type { VocabItem } from "@/lib/types";
@@ -9,9 +17,15 @@ export const Route = createFileRoute("/student/practice")({
   head: () => ({
     meta: [
       { title: "Vocabulary & homework practice — LinguaLoop" },
-      { name: "description", content: "Review vocabulary from your lessons and tick off the homework your tutor set." },
+      {
+        name: "description",
+        content: "Review vocabulary from your lessons and tick off the homework your tutor set.",
+      },
       { property: "og:title", content: "Vocabulary & homework practice — LinguaLoop" },
-      { property: "og:description", content: "Flashcards, lesson vocabulary and homework in one student practice space." },
+      {
+        property: "og:description",
+        content: "Flashcards, lesson vocabulary and homework in one student practice space.",
+      },
     ],
   }),
   component: Practice,
@@ -50,7 +64,8 @@ function Practice() {
   );
 
   const tutorHomework = useMemo(
-    () => lessons.flatMap((l) => l.homework.map((text) => ({ lessonId: l.id, topic: l.topic, text }))),
+    () =>
+      lessons.flatMap((l) => l.homework.map((text) => ({ lessonId: l.id, topic: l.topic, text }))),
     [lessons],
   );
 
@@ -102,7 +117,9 @@ function Practice() {
         <button
           onClick={() => setTab("vocab")}
           className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-            tab === "vocab" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+            tab === "vocab"
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:text-foreground"
           }`}
         >
           Vocabulary
@@ -110,7 +127,9 @@ function Practice() {
         <button
           onClick={() => setTab("homework")}
           className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-            tab === "homework" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+            tab === "homework"
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:text-foreground"
           }`}
         >
           Homework
@@ -134,7 +153,9 @@ function Practice() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <h2 className="text-lg font-semibold">Flashcard practice</h2>
-                  <p className="text-sm text-muted-foreground">Flip cards to check meaning and example.</p>
+                  <p className="text-sm text-muted-foreground">
+                    Flip cards to check meaning and example.
+                  </p>
                 </div>
                 <button
                   onClick={() => {
@@ -212,7 +233,8 @@ function Practice() {
             <div className="surface-card p-6 text-center">
               <BookOpen className="mx-auto size-8 text-muted-foreground" />
               <p className="mt-3 text-sm text-muted-foreground">
-                No vocabulary yet. Ask your tutor to save a lesson summary with words from your classes.
+                No vocabulary yet. Ask your tutor to save a lesson summary with words from your
+                classes.
               </p>
             </div>
           ) : (
@@ -260,7 +282,8 @@ function Practice() {
           )}
 
           <ReviewNotice>
-            Marking a word as "known" is just for your own tracking — your tutor will still review it with you.
+            Marking a word as "known" is just for your own tracking — your tutor will still review
+            it with you.
           </ReviewNotice>
         </div>
       ) : (
@@ -281,7 +304,9 @@ function Practice() {
                       className="mt-1 size-4"
                     />
                     <div>
-                      <p className={`font-medium ${t.done ? "text-muted-foreground line-through" : ""}`}>
+                      <p
+                        className={`font-medium ${t.done ? "text-muted-foreground line-through" : ""}`}
+                      >
                         {t.title}
                       </p>
                       <p className="text-sm text-muted-foreground">{t.detail}</p>
@@ -298,7 +323,10 @@ function Practice() {
               <h2 className="text-lg font-semibold">Homework from your tutor</h2>
               <ul className="mt-4 space-y-3">
                 {tutorHomework.map((h, i) => (
-                  <li key={`${h.lessonId}-${i}`} className="flex gap-3 rounded-xl border border-border p-3">
+                  <li
+                    key={`${h.lessonId}-${i}`}
+                    className="flex gap-3 rounded-xl border border-border p-3"
+                  >
                     <BookOpen className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
                     <div>
                       <p className="text-sm font-medium">{h.text}</p>
