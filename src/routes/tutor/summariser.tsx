@@ -12,9 +12,16 @@ export const Route = createFileRoute("/tutor/summariser")({
   head: () => ({
     meta: [
       { title: "AI lesson note summariser — LinguaLoop" },
-      { name: "description", content: "Turn an English lesson transcript into structured, editable lesson notes." },
+      {
+        name: "description",
+        content: "Turn an English lesson transcript into structured, editable lesson notes.",
+      },
       { property: "og:title", content: "AI lesson note summariser — LinguaLoop" },
-      { property: "og:description", content: "Topic, mistakes, vocabulary, homework and next-lesson focus from your transcript." },
+      {
+        property: "og:description",
+        content:
+          "Topic, mistakes, vocabulary, homework and next-lesson focus from your transcript.",
+      },
     ],
   }),
   component: Summariser,
@@ -67,8 +74,7 @@ function Summariser() {
 
   function downloadPdf() {
     if (!draft) return;
-    const esc = (t: string) =>
-      t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const esc = (t: string) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     const list = (items: string[]) =>
       items.length ? `<ul>${items.map((i) => `<li>${esc(i)}</li>`).join("")}</ul>` : "<p>—</p>";
     const html = `<!doctype html><html><head><meta charset="utf-8"><title>Lesson summary — ${esc(
@@ -146,7 +152,9 @@ function Summariser() {
     }
     setLoading(true);
     try {
-      const result = await run({ data: { transcript, context: studentContext(state, activeStudent.id) } });
+      const result = await run({
+        data: { transcript, context: studentContext(state, activeStudent.id) },
+      });
       setDraft(result);
       toast.success("Draft ready — please review and edit before saving.");
     } catch (e) {
@@ -177,7 +185,9 @@ function Summariser() {
       <span className="text-sm font-medium">{label} (one per line)</span>
       <textarea
         value={draft?.[key].join("\n") ?? ""}
-        onChange={(e) => patch({ [key]: e.target.value.split("\n").filter(Boolean) } as Partial<AiLessonSummary>)}
+        onChange={(e) =>
+          patch({ [key]: e.target.value.split("\n").filter(Boolean) } as Partial<AiLessonSummary>)
+        }
         rows={4}
         className="mt-1 w-full rounded-lg border border-input bg-card p-3 text-sm"
       />
@@ -186,7 +196,10 @@ function Summariser() {
 
   return (
     <Shell role="tutor">
-      <PageTitle title="AI lesson note summariser" subtitle="Paste the transcript, review the draft, then save it to the student's profile." />
+      <PageTitle
+        title="AI lesson note summariser"
+        subtitle="Paste the transcript, review the draft, then save it to the student's profile."
+      />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="surface-card p-5">
@@ -211,13 +224,23 @@ function Summariser() {
             placeholder="Paste the lesson transcript here…"
             className="mt-1 w-full rounded-lg border border-input bg-card p-3 text-sm"
           />
-          <button onClick={() => setTranscript(EXAMPLE)} className="mt-2 text-sm text-muted-foreground underline">
+          <button
+            onClick={() => setTranscript(EXAMPLE)}
+            className="mt-2 text-sm text-muted-foreground underline"
+          >
             Use an example transcript
           </button>
 
           <label className="mt-4 flex items-start gap-2 text-sm">
-            <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-1" />
-            <span>The student has consented to this lesson being recorded/transcribed and analysed.</span>
+            <input
+              type="checkbox"
+              checked={consent}
+              onChange={(e) => setConsent(e.target.checked)}
+              className="mt-1"
+            />
+            <span>
+              The student has consented to this lesson being recorded/transcribed and analysed.
+            </span>
           </label>
 
           <button
@@ -228,8 +251,8 @@ function Summariser() {
             {loading ? "Analysing the lesson…" : "Generate lesson summary"}
           </button>
           <ReviewNotice>
-            The AI only uses what is in your transcript. It can still misread things — you review and edit everything before it
-            reaches the student.
+            The AI only uses what is in your transcript. It can still misread things — you review
+            and edit everything before it reaches the student.
           </ReviewNotice>
         </section>
 
@@ -240,7 +263,9 @@ function Summariser() {
           </div>
 
           {!draft ? (
-            <p className="mt-4 text-sm text-muted-foreground">Your structured summary will appear here.</p>
+            <p className="mt-4 text-sm text-muted-foreground">
+              Your structured summary will appear here.
+            </p>
           ) : (
             <div className="mt-4 space-y-4">
               <label className="block">
@@ -272,7 +297,9 @@ function Summariser() {
                           value={m[field]}
                           onChange={(e) =>
                             patch({
-                              mistakes: draft.mistakes.map((x, j) => (j === i ? { ...x, [field]: e.target.value } : x)),
+                              mistakes: draft.mistakes.map((x, j) =>
+                                j === i ? { ...x, [field]: e.target.value } : x,
+                              ),
                             })
                           }
                           className="w-full rounded-md border border-input bg-card p-2 text-sm"
@@ -294,7 +321,9 @@ function Summariser() {
                           value={v[field]}
                           onChange={(e) =>
                             patch({
-                              vocabulary: draft.vocabulary.map((x, j) => (j === i ? { ...x, [field]: e.target.value } : x)),
+                              vocabulary: draft.vocabulary.map((x, j) =>
+                                j === i ? { ...x, [field]: e.target.value } : x,
+                              ),
                             })
                           }
                           className="w-full rounded-md border border-input bg-card p-2 text-sm"
@@ -323,7 +352,10 @@ function Summariser() {
                 </button>
               </div>
 
-              <button onClick={save} className="w-full rounded-full bg-highlight px-4 py-3 font-medium text-highlight-foreground">
+              <button
+                onClick={save}
+                className="w-full rounded-full bg-highlight px-4 py-3 font-medium text-highlight-foreground"
+              >
                 Approve &amp; save to student profile
               </button>
             </div>

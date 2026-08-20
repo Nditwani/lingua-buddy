@@ -21,9 +21,17 @@ export const Route = createFileRoute("/student/listening")({
   head: () => ({
     meta: [
       { title: "Listening practice — LinguaLoop" },
-      { name: "description", content: "Short English listening activities across South African, British, American, Australian, Irish and Indian English." },
+      {
+        name: "description",
+        content:
+          "Short English listening activities across South African, British, American, Australian, Irish and Indian English.",
+      },
       { property: "og:title", content: "Listening practice — LinguaLoop" },
-      { property: "og:description", content: "Conversations, comprehension questions, vocabulary and transcripts at your level." },
+      {
+        property: "og:description",
+        content:
+          "Conversations, comprehension questions, vocabulary and transcripts at your level.",
+      },
     ],
   }),
   component: Listening,
@@ -70,7 +78,9 @@ function Listening() {
     setShowTranscript(false);
     setRevealed([]);
     try {
-      setActivity(await run({ data: { accent, topic, level, industry: activeStudent?.industry ?? "" } }));
+      setActivity(
+        await run({ data: { accent, topic, level, industry: activeStudent?.industry ?? "" } }),
+      );
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not create the activity.");
     } finally {
@@ -137,7 +147,11 @@ function Listening() {
         <section className="surface-card space-y-4 p-5">
           <label className="block text-sm font-medium">
             Accent / variety
-            <select value={accent} onChange={(e) => setAccent(e.target.value)} className="input mt-1 font-normal">
+            <select
+              value={accent}
+              onChange={(e) => setAccent(e.target.value)}
+              className="input mt-1 font-normal"
+            >
               {ACCENTS.map((a) => (
                 <option key={a}>{a}</option>
               ))}
@@ -145,7 +159,11 @@ function Listening() {
           </label>
           <label className="block text-sm font-medium">
             Situation
-            <select value={topic} onChange={(e) => setTopic(e.target.value)} className="input mt-1 font-normal">
+            <select
+              value={topic}
+              onChange={(e) => setTopic(e.target.value)}
+              className="input mt-1 font-normal"
+            >
               {REAL_LIFE_TOPICS.map((t) => (
                 <option key={t}>{t}</option>
               ))}
@@ -153,7 +171,11 @@ function Listening() {
           </label>
           <label className="block text-sm font-medium">
             Level
-            <select value={level} onChange={(e) => setLevel(e.target.value as CefrLevel)} className="input mt-1 font-normal">
+            <select
+              value={level}
+              onChange={(e) => setLevel(e.target.value as CefrLevel)}
+              className="input mt-1 font-normal"
+            >
               {CEFR_LEVELS.map((l) => (
                 <option key={l}>{l}</option>
               ))}
@@ -167,7 +189,8 @@ function Listening() {
             {busy ? "Preparing…" : "Create listening activity"}
           </button>
           <ReviewNotice>
-            Audio uses your device's built-in voice, so it approximates the accent. The transcript shows the real language used.
+            Audio uses your device's built-in voice, so it approximates the accent. The transcript
+            shows the real language used.
           </ReviewNotice>
         </section>
 
@@ -201,10 +224,16 @@ function Listening() {
                 >
                   <Pause className="size-4" /> Pause
                 </button>
-                <button onClick={() => play(true)} className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm">
+                <button
+                  onClick={() => play(true)}
+                  className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm"
+                >
                   <RotateCcw className="size-4" /> Replay
                 </button>
-                <button onClick={stop} className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm">
+                <button
+                  onClick={stop}
+                  className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm"
+                >
                   <Square className="size-4" /> Stop
                 </button>
                 <button
@@ -249,7 +278,10 @@ function Listening() {
                       {revealed.includes(i) ? (
                         <p className="mt-1 text-muted-foreground">{q.answer}</p>
                       ) : (
-                        <button onClick={() => setRevealed((r) => [...r, i])} className="mt-1 text-xs underline">
+                        <button
+                          onClick={() => setRevealed((r) => [...r, i])}
+                          className="mt-1 text-xs underline"
+                        >
                           Show answer
                         </button>
                       )}

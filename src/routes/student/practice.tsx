@@ -198,22 +198,22 @@ function Practice() {
                   </p>
                 </div>
                 <div className="flex gap-2">
-                <button
-                  onClick={shuffle}
-                  className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm"
-                >
-                  <Shuffle className="size-4" /> Shuffle
-                </button>
-                <button
-                  onClick={() => {
-                    setCardIndex(0);
-                    setFlipped(false);
-                    setPracticing(true);
-                  }}
-                  className="rounded-full bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent/90"
-                >
-                  Start practice
-                </button>
+                  <button
+                    onClick={shuffle}
+                    className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm"
+                  >
+                    <Shuffle className="size-4" /> Shuffle
+                  </button>
+                  <button
+                    onClick={() => {
+                      setCardIndex(0);
+                      setFlipped(false);
+                      setPracticing(true);
+                    }}
+                    className="rounded-full bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent/90"
+                  >
+                    Start practice
+                  </button>
                 </div>
               </div>
             </div>
