@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Download, Share2 } from "lucide-react";
 import { Shell, PageTitle, AiBadge, ReviewNotice } from "@/components/app/shell";
 import { studentContext, uid, useStore } from "@/lib/store";
 import { summariseLesson, type AiLessonSummary } from "@/lib/ai.functions";
@@ -11,9 +12,16 @@ export const Route = createFileRoute("/tutor/summariser")({
   head: () => ({
     meta: [
       { title: "AI lesson note summariser — LinguaLoop" },
-      { name: "description", content: "Turn an English lesson transcript into structured, editable lesson notes." },
+      {
+        name: "description",
+        content: "Turn an English lesson transcript into structured, editable lesson notes.",
+      },
       { property: "og:title", content: "AI lesson note summariser — LinguaLoop" },
-      { property: "og:description", content: "Topic, mistakes, vocabulary, homework and next-lesson focus from your transcript." },
+      {
+        property: "og:description",
+        content:
+          "Topic, mistakes, vocabulary, homework and next-lesson focus from your transcript.",
+      },
     ],
   }),
   component: Summariser,
@@ -39,6 +47,96 @@ function Summariser() {
 
   const patch = (p: Partial<AiLessonSummary>) => setDraft((d) => (d ? { ...d, ...p } : d));
 
+  function summaryText(s: AiLessonSummary) {
+    const lines = [
+      `Lesson summary — ${activeStudent?.name ?? "Student"}`,
+      new Date().toLocaleDateString(),
+      "",
+      `Topic: ${s.topic}`,
+      "",
+      "What we talked about:",
+      s.discussion,
+      "",
+      "Mistakes & corrections:",
+      ...s.mistakes.map((m) => `• "${m.said}" → "${m.corrected}" (${m.explanation})`),
+      "",
+      "New vocabulary:",
+      ...s.vocabulary.map((v) => `• ${v.term} — ${v.meaning} (e.g. ${v.example})`),
+      "",
+      "Homework:",
+      ...s.homework.map((h) => `• ${h}`),
+      "",
+      "Next lesson focus:",
+      ...s.nextFocus.map((n) => `• ${n}`),
+    ];
+    return lines.join("\n");
+  }
+
+  function downloadPdf() {
+    if (!draft) return;
+    const esc = (t: string) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const list = (items: string[]) =>
+      items.length ? `<ul>${items.map((i) => `<li>${esc(i)}</li>`).join("")}</ul>` : "<p>—</p>";
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>Lesson summary — ${esc(
+      draft.topic,
+    )}</title><style>
+      body{font-family:ui-sans-serif,system-ui,Segoe UI,Helvetica,Arial;margin:40px;color:#1c1c1e;line-height:1.5}
+      h1{font-size:22px;margin:0 0 4px} h2{font-size:15px;margin:24px 0 6px;text-transform:uppercase;letter-spacing:.06em}
+      .meta{color:#666;font-size:13px} ul{margin:0;padding-left:18px} li{margin-bottom:4px} p{margin:0 0 8px}
+    </style></head><body>
+      <h1>${esc(draft.topic)}</h1>
+      <p class="meta">${esc(activeStudent?.name ?? "Student")} · ${new Date().toLocaleDateString()} · LinguaLoop</p>
+      <h2>What we talked about</h2><p>${esc(draft.discussion)}</p>
+      <h2>Mistakes &amp; corrections</h2>${list(
+        draft.mistakes.map((m) => `"${m.said}" → "${m.corrected}" — ${m.explanation}`),
+      )}
+      <h2>New vocabulary</h2>${list(
+        draft.vocabulary.map((v) => `${v.term} — ${v.meaning} (e.g. ${v.example})`),
+      )}
+      <h2>Homework</h2>${list(draft.homework)}
+      <h2>Next lesson focus</h2>${list(draft.nextFocus)}
+    </body></html>`;
+
+    const frame = document.createElement("iframe");
+    frame.style.position = "fixed";
+    frame.style.right = "0";
+    frame.style.bottom = "0";
+    frame.style.width = "0";
+    frame.style.height = "0";
+    frame.style.border = "0";
+    document.body.appendChild(frame);
+    const doc = frame.contentDocument;
+    if (!doc || !frame.contentWindow) {
+      document.body.removeChild(frame);
+      toast.error("Could not open the print dialog.");
+      return;
+    }
+    doc.open();
+    doc.write(html);
+    doc.close();
+    frame.contentWindow.focus();
+    setTimeout(() => {
+      frame.contentWindow?.print();
+      setTimeout(() => document.body.removeChild(frame), 1000);
+    }, 200);
+    toast.success("Choose “Save as PDF” in the print dialog.");
+  }
+
+  async function shareSummary() {
+    if (!draft) return;
+    const text = summaryText(draft);
+    try {
+      if (typeof navigator !== "undefined" && navigator.share) {
+        await navigator.share({ title: `Lesson summary — ${draft.topic}`, text });
+        return;
+      }
+      await navigator.clipboard.writeText(text);
+      toast.success("Summary copied to your clipboard.");
+    } catch {
+      toast.error("Could not share the summary.");
+    }
+  }
+
   async function generate() {
     if (!activeStudent) {
       toast.error("Add a student first.");
@@ -54,7 +152,9 @@ function Summariser() {
     }
     setLoading(true);
     try {
-      const result = await run({ data: { transcript, context: studentContext(state, activeStudent.id) } });
+      const result = await run({
+        data: { transcript, context: studentContext(state, activeStudent.id) },
+      });
       setDraft(result);
       toast.success("Draft ready — please review and edit before saving.");
     } catch (e) {
@@ -85,7 +185,9 @@ function Summariser() {
       <span className="text-sm font-medium">{label} (one per line)</span>
       <textarea
         value={draft?.[key].join("\n") ?? ""}
-        onChange={(e) => patch({ [key]: e.target.value.split("\n").filter(Boolean) } as Partial<AiLessonSummary>)}
+        onChange={(e) =>
+          patch({ [key]: e.target.value.split("\n").filter(Boolean) } as Partial<AiLessonSummary>)
+        }
         rows={4}
         className="mt-1 w-full rounded-lg border border-input bg-card p-3 text-sm"
       />
@@ -94,7 +196,10 @@ function Summariser() {
 
   return (
     <Shell role="tutor">
-      <PageTitle title="AI lesson note summariser" subtitle="Paste the transcript, review the draft, then save it to the student's profile." />
+      <PageTitle
+        title="AI lesson note summariser"
+        subtitle="Paste the transcript, review the draft, then save it to the student's profile."
+      />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="surface-card p-5">
@@ -119,13 +224,23 @@ function Summariser() {
             placeholder="Paste the lesson transcript here…"
             className="mt-1 w-full rounded-lg border border-input bg-card p-3 text-sm"
           />
-          <button onClick={() => setTranscript(EXAMPLE)} className="mt-2 text-sm text-muted-foreground underline">
+          <button
+            onClick={() => setTranscript(EXAMPLE)}
+            className="mt-2 text-sm text-muted-foreground underline"
+          >
             Use an example transcript
           </button>
 
           <label className="mt-4 flex items-start gap-2 text-sm">
-            <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-1" />
-            <span>The student has consented to this lesson being recorded/transcribed and analysed.</span>
+            <input
+              type="checkbox"
+              checked={consent}
+              onChange={(e) => setConsent(e.target.checked)}
+              className="mt-1"
+            />
+            <span>
+              The student has consented to this lesson being recorded/transcribed and analysed.
+            </span>
           </label>
 
           <button
@@ -136,8 +251,8 @@ function Summariser() {
             {loading ? "Analysing the lesson…" : "Generate lesson summary"}
           </button>
           <ReviewNotice>
-            The AI only uses what is in your transcript. It can still misread things — you review and edit everything before it
-            reaches the student.
+            The AI only uses what is in your transcript. It can still misread things — you review
+            and edit everything before it reaches the student.
           </ReviewNotice>
         </section>
 
@@ -148,7 +263,9 @@ function Summariser() {
           </div>
 
           {!draft ? (
-            <p className="mt-4 text-sm text-muted-foreground">Your structured summary will appear here.</p>
+            <p className="mt-4 text-sm text-muted-foreground">
+              Your structured summary will appear here.
+            </p>
           ) : (
             <div className="mt-4 space-y-4">
               <label className="block">
@@ -180,7 +297,9 @@ function Summariser() {
                           value={m[field]}
                           onChange={(e) =>
                             patch({
-                              mistakes: draft.mistakes.map((x, j) => (j === i ? { ...x, [field]: e.target.value } : x)),
+                              mistakes: draft.mistakes.map((x, j) =>
+                                j === i ? { ...x, [field]: e.target.value } : x,
+                              ),
                             })
                           }
                           className="w-full rounded-md border border-input bg-card p-2 text-sm"
@@ -202,7 +321,9 @@ function Summariser() {
                           value={v[field]}
                           onChange={(e) =>
                             patch({
-                              vocabulary: draft.vocabulary.map((x, j) => (j === i ? { ...x, [field]: e.target.value } : x)),
+                              vocabulary: draft.vocabulary.map((x, j) =>
+                                j === i ? { ...x, [field]: e.target.value } : x,
+                              ),
                             })
                           }
                           className="w-full rounded-md border border-input bg-card p-2 text-sm"
@@ -216,7 +337,25 @@ function Summariser() {
               {listField("Homework", "homework")}
               {listField("Next lesson focus", "nextFocus")}
 
-              <button onClick={save} className="w-full rounded-full bg-highlight px-4 py-3 font-medium text-highlight-foreground">
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={downloadPdf}
+                  className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm font-medium"
+                >
+                  <Download className="size-4" /> Download PDF
+                </button>
+                <button
+                  onClick={() => void shareSummary()}
+                  className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm font-medium"
+                >
+                  <Share2 className="size-4" /> Share summary
+                </button>
+              </div>
+
+              <button
+                onClick={save}
+                className="w-full rounded-full bg-highlight px-4 py-3 font-medium text-highlight-foreground"
+              >
                 Approve &amp; save to student profile
               </button>
             </div>

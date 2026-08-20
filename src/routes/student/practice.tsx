@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   BookOpen,
   CheckCircle2,
@@ -8,6 +8,7 @@ import {
   RotateCcw,
   ArrowLeft,
   ArrowRight,
+  Shuffle,
 } from "lucide-react";
 import { Shell, PageTitle, AiBadge, ReviewNotice } from "@/components/app/shell";
 import { useStore } from "@/lib/store";
@@ -38,13 +39,14 @@ function Practice() {
   const [flipped, setFlipped] = useState(false);
   const [known, setKnown] = useState<Set<string>>(new Set());
   const [practicing, setPracticing] = useState(false);
+  const [order, setOrder] = useState<number[] | null>(null);
 
   const lessons = useMemo(
     () => state.lessons.filter((l) => l.studentId === activeStudent?.id),
     [state.lessons, activeStudent?.id],
   );
 
-  const vocabulary = useMemo(() => {
+  const baseVocabulary = useMemo(() => {
     const seen = new Set<string>();
     const items: VocabItem[] = [];
     for (const lesson of lessons) {
@@ -58,6 +60,11 @@ function Practice() {
     return items;
   }, [lessons]);
 
+  const vocabulary = useMemo(() => {
+    if (!order) return baseVocabulary;
+    return order.map((i) => baseVocabulary[i]).filter((v): v is VocabItem => Boolean(v));
+  }, [baseVocabulary, order]);
+
   const homeworkTasks = useMemo(
     () => state.tasks.filter((t) => t.studentId === activeStudent?.id && t.category === "Homework"),
     [state.tasks, activeStudent?.id],
@@ -69,22 +76,55 @@ function Practice() {
     [lessons],
   );
 
+  const nextCard = useCallback(() => {
+    setFlipped(false);
+    setCardIndex((i) => (vocabulary.length ? (i + 1) % vocabulary.length : 0));
+  }, [vocabulary.length]);
+
+  const prevCard = useCallback(() => {
+    setFlipped(false);
+    setCardIndex((i) => (vocabulary.length ? (i - 1 + vocabulary.length) % vocabulary.length : 0));
+  }, [vocabulary.length]);
+
+  useEffect(() => {
+    if (!practicing) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "ArrowRight") {
+        e.preventDefault();
+        nextCard();
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        prevCard();
+      } else if (e.key === " " || e.key === "Enter") {
+        e.preventDefault();
+        setFlipped((f) => !f);
+      } else if (e.key === "Escape") {
+        setPracticing(false);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [practicing, nextCard, prevCard]);
+
+  function shuffle() {
+    const idx = baseVocabulary.map((_, i) => i);
+    for (let i = idx.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const tmp = idx[i]!;
+      idx[i] = idx[j]!;
+      idx[j] = tmp;
+    }
+    setOrder(idx);
+    setCardIndex(0);
+    setFlipped(false);
+  }
+
   if (!activeStudent) {
     return (
       <Shell role="student">
         <PageTitle title="No student selected" subtitle="Ask your tutor to add you first." />
       </Shell>
     );
-  }
-
-  function nextCard() {
-    setFlipped(false);
-    setCardIndex((i) => (i + 1) % vocabulary.length);
-  }
-
-  function prevCard() {
-    setFlipped(false);
-    setCardIndex((i) => (i - 1 + vocabulary.length) % vocabulary.length);
   }
 
   function markKnown(term: string) {
@@ -157,16 +197,24 @@ function Practice() {
                     Flip cards to check meaning and example.
                   </p>
                 </div>
-                <button
-                  onClick={() => {
-                    setCardIndex(0);
-                    setFlipped(false);
-                    setPracticing(true);
-                  }}
-                  className="rounded-full bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent/90"
-                >
-                  Start practice
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={shuffle}
+                    className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm"
+                  >
+                    <Shuffle className="size-4" /> Shuffle
+                  </button>
+                  <button
+                    onClick={() => {
+                      setCardIndex(0);
+                      setFlipped(false);
+                      setPracticing(true);
+                    }}
+                    className="rounded-full bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent/90"
+                  >
+                    Start practice
+                  </button>
+                </div>
               </div>
             </div>
           ) : null}
@@ -185,19 +233,31 @@ function Practice() {
                 </button>
               </div>
 
+              <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full bg-primary transition-all"
+                  style={{ width: `${((cardIndex + 1) / vocabulary.length) * 100}%` }}
+                />
+              </div>
+
               <button
                 onClick={() => setFlipped((f) => !f)}
-                className="mt-4 w-full rounded-2xl border-2 border-dashed border-border bg-muted/40 p-10 text-center transition-colors hover:bg-muted/60"
+                aria-label={flipped ? "Hide meaning" : "Reveal meaning"}
+                className="mt-4 w-full [perspective:1200px]"
               >
-                <p className="text-2xl font-semibold">{currentCard.term}</p>
-                {flipped ? (
-                  <div className="mt-4 space-y-2 text-sm">
-                    <p className="text-muted-foreground">{currentCard.meaning}</p>
-                    <p className="italic text-foreground">“{currentCard.example}”</p>
+                <div
+                  className="relative min-h-[220px] w-full transition-transform duration-500 [transform-style:preserve-3d]"
+                  style={{ transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)" }}
+                >
+                  <div className="absolute inset-0 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border bg-muted/40 p-8 [backface-visibility:hidden]">
+                    <p className="text-2xl font-semibold">{currentCard.term}</p>
+                    <p className="mt-2 text-sm text-muted-foreground">Tap or press space to flip</p>
                   </div>
-                ) : (
-                  <p className="mt-2 text-sm text-muted-foreground">Tap to reveal meaning</p>
-                )}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-border bg-card p-8 text-center [backface-visibility:hidden] [transform:rotateY(180deg)]">
+                    <p className="text-sm text-muted-foreground">{currentCard.meaning}</p>
+                    <p className="text-sm italic">“{currentCard.example}”</p>
+                  </div>
+                </div>
               </button>
 
               <div className="mt-4 flex flex-wrap justify-center gap-3">
@@ -226,6 +286,10 @@ function Practice() {
                   Next <ArrowRight className="size-4" />
                 </button>
               </div>
+
+              <p className="mt-3 text-center text-xs text-muted-foreground">
+                Keyboard: ← → to move, space to flip, Esc to exit.
+              </p>
             </div>
           ) : null}
 
